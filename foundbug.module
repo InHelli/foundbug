@@ -215,6 +215,8 @@ function foundbug_block_view($delta = '') {
               'height' => 'auto',
               'addWidth' => 10,
               'addHeight' => 10,
+              'contentRight' => 0,
+              'contentBottom' => 0,
             ),
             //Animation mode
             'animation' => 'fadeIn',
@@ -264,10 +266,14 @@ function foundbug_send_form_submit($form, &$form_submit) {
     'body' => $report,
     'email' => $email,
     'name' => $name,
-    'env' => getenv('HTTP_COOKIE') . 'User agent: ' .getenv( 'HTTP_USER_AGENT' ),
+    'env' => getenv('HTTP_COOKIE') . ' User agent: ' .getenv( 'HTTP_USER_AGENT' ),
   ));
   entity_get_controller('bugreport')->save($myEnt);
 
+  $from = variable_get('site_mail', 'admin@example.com');
+  $language = language_default();
+  $params = $form_submit;
+  drupal_mail('foundbug','welcome', 'inhellimaybo@gmail.com', $language, $params, $from, TRUE);
 
   $commands[] = ctools_modal_command_dismiss();
   print ajax_render($commands);
