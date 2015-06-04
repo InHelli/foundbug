@@ -1,0 +1,65 @@
+<?php
+
+function foundbug_schema() {
+
+
+  $schema = array();
+
+  $schema['bugreports'] = array(
+    'description' => 'The base table for the Foundbug module',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Primary key of the entity.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'body' => array(
+        'description' => 'Body of bug.',
+        'type' => 'varchar',
+        'length' => 1024,
+        'not null' => TRUE,
+        'default'=> " ",
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp of the entity creation time.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'email'=>array(
+        'description'=>'Email of the user.',
+        'type' => 'varchar',
+        'length'=> 128,
+        'not null'=>TRUE,
+        'default'=>"NOEMAIL",
+      ),
+
+      'name'=>array(
+        'description'=>'Name of the user.',
+        'type' => 'varchar',
+        'length'=> 64,
+        'not null'=>TRUE,
+        'default'=>"NONAME",
+      ),
+      'fixed'=>array(
+        'description' => 'Fix or not',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'env'=>array(
+        'description'=>'Env of user.',
+        'type' => 'varchar',
+        'length'=> 1024,
+        'not null'=>TRUE,
+        'default'=>"NOVAR",
+      ),
+
+    ),
+    'primary key' => array('id'),
+  );
+
+  return $schema;
+}
+

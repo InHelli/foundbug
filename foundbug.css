@@ -1,0 +1,78 @@
+#block-foundbug-foundbug {
+    position: fixed;
+    border: 1px solid black;
+    padding: 10px;
+    top: 200px;
+    left: -50px;
+    background-color: #00ff00;
+    z-index: 99;
+}
+
+#block-foundbug-foundbug:hover {
+    left: 0px;
+}
+
+.form-item {
+    margin: 0px;
+}
+
+.bug-button {
+
+    background-color: transparent;
+    background-image: url(bug.png);
+    width: 48px;
+    height: 48px;
+    border: none;
+    text-indent: -999em;
+}
+
+#edit-text {
+    margin: 0px;
+}
+
+#foundbug-send-form {
+    width: 300px;
+    margin: auto;
+}
+
+.form-textarea-wrapper.resizable.textarea-processed.resizable-textarea {
+    margin: 0px;
+}
+
+#PS{
+    font-size: 80%;
+    margin: 0;
+    color: #a9a9a9;
+}
+
+.foundbug_fix {
+
+    background-color: transparent;
+    background-image: url(button_ok.png);
+    max-width:80%;
+    max-height: 80%;
+    width: 20px;
+    height: 20px;
+    border: none;
+    text-indent: -999em;
+}
+
+.foundbug_fixed {
+
+    background-color: transparent;
+    background-image: url(button_ok_fixed.png);
+    width: 20px;
+    height: 20px;
+    border: none;
+    text-indent: -999em;
+}
+
+.foundbug_delete {
+
+    background-color: transparent;
+    background-image: url(delete.png);
+    width: 20px;
+    height: 20px;
+    border: none;
+    text-indent: -999em;
+}

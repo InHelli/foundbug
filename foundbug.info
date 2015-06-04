@@ -1,0 +1,7 @@
+name = Foundbug
+description =  Allows users to talk about bugs on your website.
+core = 7.x
+dependencies[]=ctools
+stylesheets[all][] = foundbug.css
+files[] = foundbug.install
+files[] = foundbug.module
