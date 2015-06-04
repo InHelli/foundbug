@@ -1,5 +1,5 @@
 <div id="block">
-<?php
-        print(drupal_render($content));
-?>
+  <?php
+  print(drupal_render($content));
+  ?>
 </div>

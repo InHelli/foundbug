@@ -1,5 +1,8 @@
 <?php
 
+/*
+ * implement hook_schema()
+ */
 function foundbug_schema() {
 
 
@@ -19,7 +22,7 @@ function foundbug_schema() {
         'type' => 'varchar',
         'length' => 1024,
         'not null' => TRUE,
-        'default'=> " ",
+        'default' => " ",
       ),
       'created' => array(
         'description' => 'The Unix timestamp of the entity creation time.',
@@ -27,33 +30,32 @@ function foundbug_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
-      'email'=>array(
-        'description'=>'Email of the user.',
+      'email' => array(
+        'description' => 'Email of the user.',
         'type' => 'varchar',
-        'length'=> 128,
-        'not null'=>TRUE,
-        'default'=>"NOEMAIL",
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => "NOEMAIL",
       ),
-
-      'name'=>array(
-        'description'=>'Name of the user.',
+      'name' => array(
+        'description' => 'Name of the user.',
         'type' => 'varchar',
-        'length'=> 64,
-        'not null'=>TRUE,
-        'default'=>"NONAME",
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => "NONAME",
       ),
-      'fixed'=>array(
+      'fixed' => array(
         'description' => 'Fix or not',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
       ),
-      'env'=>array(
-        'description'=>'Env of user.',
+      'env' => array(
+        'description' => 'Env of user.',
         'type' => 'varchar',
-        'length'=> 1024,
-        'not null'=>TRUE,
-        'default'=>"NOVAR",
+        'length' => 1024,
+        'not null' => TRUE,
+        'default' => "NOVAR",
       ),
 
     ),
