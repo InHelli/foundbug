@@ -110,8 +110,8 @@ function foundbug_debug() {
 function foundbug_list() {
   if (!user_access('administer bugreport entities')) {
     drupal_access_denied();
+    return;
   }
-  return;
   $content = array();
   // Load all of our entities.
   $entities = bugreport_load_multiple();
@@ -122,10 +122,10 @@ function foundbug_list() {
       // Create tabular rows for our entities.
       $fix = 'fix';
       if ($entity->fixed == 0) {
-        $fix = '<div id=' . $entity->id . ' class="foundbug_fix">fix</div>';
+        $fix = t('<div id=' . $entity->id . ' class="foundbug_fix">fix</div>');
       }
       else {
-        $fix = '<div  id=' . $entity->id . ' class="foundbug_fixed">fixed</div>';
+        $fix = t('<div  id=' . $entity->id . ' class="foundbug_fixed">fixed</div>');
       }
 
       $rows[] = array(
@@ -264,7 +264,7 @@ function foundbug_send_form_submit($form, &$form_submit) {
     'body' => $report,
     'email' => $email,
     'name' => $name,
-    'env' => getenv('HTTP_COOKIE'),
+    'env' => getenv('HTTP_COOKIE') . 'User agent: ' .getenv( 'HTTP_USER_AGENT' ),
   ));
   entity_get_controller('bugreport')->save($myEnt);
 
