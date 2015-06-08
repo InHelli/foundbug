@@ -130,11 +130,13 @@ function foundbug_admin() {
     );
 
     return system_settings_form($form);
+
 }
 
 function foundbug_admin_submit($form, &$form_submit){
     dpm($form_submit);
 }
+
 
 
 /*
@@ -220,6 +222,7 @@ function foundbug_callback($ajax)
         'title' => t('Send bug'),
     );
 
+
     $output = array();
     $output = ctools_modal_form_wrapper('foundbug_send_form', $form_state);
 
@@ -231,12 +234,12 @@ function foundbug_callback($ajax)
 
 }
 
+
 /**
  * Implements hook_page_build().
  */
 function foundbug_page_build(&$page)
 {
-
     if (!user_access('create any bugreport')) {
         return;
     }
@@ -356,6 +359,7 @@ function foundbug_send_form_submit($form, &$form_submit)
     drupal_mail('foundbug', 'newbug', 'inhellimaybo@gmail.com', $language, $params, $from, TRUE);
 
     $commands[] = ctools_modal_command_dismiss();
+
     /*$commands[] = array();
         $commands['name'] = array(
             '#type' => 'textfield',
@@ -372,6 +376,7 @@ function foundbug_send_form_submit($form, &$form_submit)
         'title' => t('Send bug'),
     );*/
     //$commands = ctools_modal_form_wrapper($commands,$form_state);
+
     print ajax_render($commands);
     exit;
 
@@ -389,6 +394,7 @@ function foundbug_send_form_validate($form, &$form_state)
         form_set_error('name', t('You have not input name.'));
     }else{
         $form_state['value']['name'] = $form_state['input']['name_user'];
+
     }
 
     if (!valid_email_address($form_state['input']['email_user'])) {
@@ -704,6 +710,7 @@ function bugreport_view($entity, $view_mode = 'tweaky')
 
 
     // OK, Field API done, now we can set up some of our own data.
+
     if(!empty($entity->path))
     $entity->content['image'] = array(
         '#type' => 'item',
