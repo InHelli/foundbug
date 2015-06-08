@@ -228,6 +228,7 @@ function foundbug_callback($ajax)
     }
     print ajax_render($output);
     //drupal_exit();
+<<<<<<< HEAD
 
 }
 
@@ -237,6 +238,17 @@ function foundbug_callback($ajax)
 function foundbug_page_build(&$page)
 {
 
+=======
+
+}
+
+/**
+ * Implements hook_page_build().
+ */
+function foundbug_page_build(&$page)
+{
+
+>>>>>>> origin/master
     if (!user_access('create any bugreport')) {
         return;
     }
@@ -356,6 +368,7 @@ function foundbug_send_form_submit($form, &$form_submit)
     drupal_mail('foundbug', 'newbug', 'inhellimaybo@gmail.com', $language, $params, $from, TRUE);
 
     $commands[] = ctools_modal_command_dismiss();
+<<<<<<< HEAD
     /*$commands[] = array();
         $commands['name'] = array(
             '#type' => 'textfield',
@@ -372,6 +385,8 @@ function foundbug_send_form_submit($form, &$form_submit)
         'title' => t('Send bug'),
     );*/
     //$commands = ctools_modal_form_wrapper($commands,$form_state);
+=======
+>>>>>>> origin/master
     print ajax_render($commands);
     exit;
 
@@ -702,7 +717,10 @@ function bugreport_view($entity, $view_mode = 'tweaky')
 
 
     // OK, Field API done, now we can set up some of our own data.
+<<<<<<< HEAD
     if(!empty($entity->path))
+=======
+>>>>>>> origin/master
     $entity->content['image'] = array(
         '#type' => 'item',
         '#markup' => '<img class="bugreport-image" src=' . file_create_url($entity->path) . '>',
