@@ -4,7 +4,7 @@
     padding: 10px;
     top: 200px;
     left: -50px;
-    background-color: #00ff00;
+    /*background-color: #00ff00;*/
     z-index: 99;
 }
 
@@ -19,7 +19,7 @@
 .bug-button {
 
     background-color: transparent;
-    background-image: url(bug.png);
+    /*background-image: url(bug.png);*/
     width: 48px;
     height: 48px;
     border: none;
@@ -75,4 +75,7 @@
     height: 20px;
     border: none;
     text-indent: -999em;
+}
+img.bugreport-image{
+    width: 50%;
 }
