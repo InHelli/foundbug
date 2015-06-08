@@ -1,5 +1,21 @@
 <?php
 
+
+/*
+ * implement hook_install()
+ */
+function foundbug_install() {
+  user_role_change_permissions(DRUPAL_AUTHENTICATED_RID, array('create any bugreport' => TRUE));
+  $mydir = 'public://foundbug_files';
+  file_prepare_directory($mydir, FILE_CREATE_DIRECTORY);
+    variable_set('foundbug_imgpath',(drupal_get_path('module', 'foundbug') . "/bug.png"));
+}
+
+function foundbug_enable()
+{
+
+}
+
 /*
  * implement hook_schema()
  */
@@ -51,6 +67,13 @@ function foundbug_schema() {
         'default' => 0,
       ),
       'env' => array(
+        'description' => 'Env of user.',
+        'type' => 'varchar',
+        'length' => 1024,
+        'not null' => TRUE,
+        'default' => "NOVAR",
+      ),
+      'path' => array(
         'description' => 'Env of user.',
         'type' => 'varchar',
         'length' => 1024,
