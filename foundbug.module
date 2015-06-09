@@ -109,7 +109,7 @@ function foundbug_permission()
 function foundbug_admin() {
     $form = array();
 
-    $form['foundbug_imgpath'] = array(
+    /*$form['foundbug_imgpath'] = array(
         '#type' => 'textfield',
         '#title' => t(''),
         '#default_value' => variable_get('foundbug_imgpath', ' '),
@@ -117,26 +117,82 @@ function foundbug_admin() {
         '#maxlength' => 128,
         '#description' => t("The path of block picture."),
         '#required' => TRUE,
-    );
+    );*/
+    $pics = array();
+    $style = 'style = "width:48px"';
+    $results = file_scan_directory(drupal_get_path('module','foundbug'),'(bug.png)');
+    foreach($results as $pic)
+    {
+        $pics[file_create_url($pic->uri)] = '<img class = "radio_bugs" src="'.file_create_url($pic->uri).'">';
 
+    }
+
+    $custompic = file_scan_directory(drupal_realpath('public://foundbug_files/bugs'),'(custombug./|jpg|png|gif|)');
+
+    foreach($custompic as $pic)
+    $pics[file_create_url('public://foundbug_files/bugs/' . $pic->filename)] = '<img class = "radio_bugs"  src="'
+                                                                                . file_create_url('public://foundbug_files/bugs/' . $pic->filename)
+                                                                                .'" '
+
+                                                                                . '>';
+
+
+    $form['foundbug_imgpath'] = array(
+        '#type' => 'radios',
+        '#title' => t('Image for block'),
+        '#default_value' => variable_get('foundbug_imgpath','<img src="'.file_create_url(drupal_get_path('module', 'foundbug') . "/bug.png").'">'),
+        '#options' => $pics,
+        '#description' => t('Choose pictures'),
+
+    );
+    $form['file_picture'] = array(
+
+        '#type' =>'managed_file',
+        '#description' =>t('Load your picture'),
+        '#upload_location' =>'public://foundbug_files/bugs', //.drupal_get_path('module','foundbug'),
+        '#upload_validators' => array('file_validate_extensions' => array('png jpg gif'),'_change_filename'=>array()),
+
+    );
     $form['foundbug_blockcolor'] = array(
         '#type' => 'textfield',
-        '#title' => t('#'),
+        '#title' => t('Color of the block'),
         '#default_value' => variable_get('foundbug_blockcolor', '00FF00'),
         '#size' => 6,
         '#maxlength' => 6,
         '#description' => t("The code of block color."),
         '#required' => TRUE,
     );
-
+    $form['#submit'][] = 'foundbug_custom_admin_submit';
     return system_settings_form($form);
 
 }
 
-function foundbug_admin_submit($form, &$form_submit){
-    dpm($form_submit);
+function _change_filename(stdClass $file){
+
+    $file->filename = 'custombug.' . pathinfo($file->filename, PATHINFO_EXTENSION);
+
+    $uri = 'public://foundbug_files/bugs/custombug.jpg';
+    $ex = file_load_multiple(array(),array('uri'=>$uri));
+    try {
+        foreach ($ex as $file_to_del)
+            file_delete($file_to_del);
+    }
+    catch(phpmailerException $exc)
+    {
+        
+    }
+
+    $file->destination = file_destination('public://foundbug_files/bugs/'.$file->filename,FILE_EXISTS_REPLACE);
+
+    return array();
 }
 
+
+function foundbug_custom_admin_submit($form, &$form_state){
+
+    $file = file_load($form_state['values']['file_picture']);
+
+}
 
 
 /*
@@ -145,7 +201,7 @@ function foundbug_admin_submit($form, &$form_submit){
 function foundbug_debug()
 {
 
-    $themes = list_themes();
+
 
 }
 
@@ -229,6 +285,8 @@ function foundbug_callback($ajax)
     if (!empty($form_state['ajax_commands'])) {
         $output = $form_state['ajax_commands'];
     }
+
+
     print ajax_render($output);
     //drupal_exit();
 
@@ -248,7 +306,8 @@ function foundbug_page_build(&$page)
     $blockcolor = variable_get('foundbug_blockcolor','');
     $page['content']['foundbug'] = array('#markup' => '<div id="block-foundbug-foundbug"
                                                     class="block block-foundbug contextual-links-region first last odd" style="background-color: #'.$blockcolor.'">' .
-        $content . '</div>');
+                                                    $content .
+                                                    '</div>');
 
 }
 
@@ -293,7 +352,7 @@ function foundbug_block_view($delta = '')
                 ), 'setting');
                 $bugpath =  variable_get('foundbug_imgpath',' ');
                 $blocks['subject'] = t('');
-                $blocks['content'] = l('<div class="bug-button" style="background-image:url('.$bugpath.');">button</div>', '/foundbug/form/js', array(
+                $blocks['content'] = l('<img class="bug-button" src = "'.$bugpath.'">', '/foundbug/form/js', array(
                     'attributes' => array('class' => array('ctools-use-modal ctools-modal-bug-style')),
                     'html' => TRUE
                 )); /// $entries
@@ -358,25 +417,14 @@ function foundbug_send_form_submit($form, &$form_submit)
     $params = $form_submit;
     drupal_mail('foundbug', 'newbug', 'inhellimaybo@gmail.com', $language, $params, $from, TRUE);
 
-    $commands[] = ctools_modal_command_dismiss();
+    //$commands[] = ctools_modal_command_dismiss();
 
-    /*$commands[] = array();
-        $commands['name'] = array(
-            '#type' => 'textfield',
-            '#name' => 'name_user',
-            '#size' => '30',
-            '#title' => t('Name'),
-            '#label' => 'Name:',
-            '#default_value' => 'Bugreport send.',
-            //'#disabled' => TRUE,
-        );
-
-    $form_state = array(
-        'ajax' => TRUE,
-        'title' => t('Send bug'),
-    );*/
-    //$commands = ctools_modal_form_wrapper($commands,$form_state);
-
+    //$commands[] = ctools_ajax_command_reload();
+    $html = '<a href="#" class="ctools-close-modal"> <div style="   margin: 10px 40%;
+                                                                    border: 1px solid;
+                                                                    text-align: center;"> OK </div></a>';
+    $commands[] = ctools_modal_command_display('Bug sended', $html);
+    //$commands[] = ctools_modal_command_dismiss(t('Login Success'));
     print ajax_render($commands);
     exit;
 
@@ -406,13 +454,13 @@ function foundbug_send_form_validate($form, &$form_state)
     }
 
     $validators = array(
-        'file_validate_is_image' => array(), // Проверка, действительно ли файл является изображением
-        'file_validate_extensions' => array('png gif jpg jpeg'), // Проверка на расширения
-        'file_validate_size' => array(3 * 1024 * 1024), // Проверка на размер файла (максимум 3mb)
+        'file_validate_is_image' => array(), // Check: Image
+        'file_validate_extensions' => array('png gif jpg jpeg'), // Check: Ext
+        'file_validate_size' => array(3 * 1024 * 1024), // Check: Size
     );
-    // Загружаем файл в sites/default/files (по умолчанию)
+
     if ($file = file_save_upload('file', $validators, 'public://foundbug_files')) {
-        $form_state['values']['file'] = $file; // передаём информацию о файле в ф-ю mymodule_form_submit()
+        $form_state['values']['file'] = $file; //
     }
     /*else {
       form_set_error('file', 'Файл не был загружен');
