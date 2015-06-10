@@ -8,11 +8,10 @@ function foundbug_install() {
   user_role_change_permissions(DRUPAL_AUTHENTICATED_RID, array('create any bugreport' => TRUE));
   $mydir = 'public://foundbug_files';
   file_prepare_directory($mydir, FILE_CREATE_DIRECTORY);
-    variable_set('foundbug_imgpath',(drupal_get_path('module', 'foundbug') . "/bug.png"));
+  variable_set('foundbug_imgpath', (drupal_get_path('module', 'foundbug') . "/bug.png"));
 }
 
-function foundbug_enable()
-{
+function foundbug_enable() {
 
 }
 
