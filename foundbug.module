@@ -118,22 +118,19 @@ function foundbug_admin() {
     $pics[file_create_url($pic->uri)] = '<img class = "radio_bugs" src="' . file_create_url($pic->uri) . '">';
 
   }
-
-  $custompic = file_scan_directory(drupal_realpath(CUSTOM_BUG_PATH), '(custombug./|jpg|png|gif|)');
+  $custom_fid = variable_get('foundbug_upload_fid', 0);
   $picpath = '';
-  if (empty($custompic)) {
+  $file = file_load($custom_fid);
+  if ((!empty($file))&&file_exists($file->uri)) {
+    $picpath = file_create_url(file_load($custom_fid)->uri);
+    $pics[$picpath] = '<img class = "radio_bugs"  src="'
+      . $picpath
+      . '" '
+
+      . '>';
+  }else {
     $picpath = t('Alternative');
     $pics['Alternative'] = $picpath;
-  }
-  else {
-    foreach ($custompic as $pic) {
-      $picpath = file_create_url(CUSTOM_BUG_PATH . '/' . $pic->filename);
-      $pics[$picpath] = '<img class = "radio_bugs"  src="'
-        . $picpath
-        . '" '
-
-        . '>';
-    }
   }
 
 
@@ -153,7 +150,7 @@ function foundbug_admin() {
     //.drupal_get_path('module','foundbug'),
     '#upload_validators' => array(
       'file_validate_extensions' => array('png jpg gif'),
-      '_change_filename' => array()
+
     ),
     '#states' => array(
 
@@ -170,20 +167,20 @@ function foundbug_admin() {
     '#type' => 'radios',
     '#title' => t('Position of the block'),
     '#options' => array(
-      'left'=>t('Letf'),
-      'right'=>t('Right'),
+      'left' => t('Letf'),
+      'right' => t('Right'),
 
     ),
-    '#default_value'=>variable_get('foundbug_position_side','left'),
+    '#default_value' => variable_get('foundbug_position_side', 'left'),
   );
   $form['foundbug_position_tdside'] = array(
     '#type' => 'radios',
     '#options' => array(
-      'top'=>t('Top'),
-      'bottom'=>t('Bottom'),
+      'top' => t('Top'),
+      'bottom' => t('Bottom'),
 
     ),
-    '#default_value'=>variable_get('foundbug_position_tdside','top'),
+    '#default_value' => variable_get('foundbug_position_tdside', 'top'),
     '#description' => t("The side position of the block."),
   );
   $form['foundbug_offset_y'] = array(
@@ -191,7 +188,7 @@ function foundbug_admin() {
     '#size' => 6,
     '#maxlength' => 6,
     '#description' => t("The Y offset of the block."),
-    '#default_value'=>variable_get('foundbug_offset_y','50'),
+    '#default_value' => variable_get('foundbug_offset_y', '50'),
     '#required' => TRUE,
 
   );
@@ -207,35 +204,31 @@ function foundbug_admin() {
   );
   $form['#submit'][] = 'foundbug_custom_admin_submit';
   $form['#validate'][] = 'foundbug_custom_admin_validate';
+
+
   return system_settings_form($form);
 
-}
-
-function _change_filename(stdClass $file) {
-
-  $file->filename = 'custombug.' . pathinfo($file->filename, PATHINFO_EXTENSION);
-
-  $uri = CUSTOM_BUG_PATH . '/custombug.jpg';
-  $ex = file_load_multiple(array(), array('uri' => $uri));
-  if (!empty($ex)) {
-    try {
-      foreach ($ex as $file_to_del) {
-
-        file_delete($file_to_del);
-      }
-    } catch (Exception $exc) {
-
-    }
-  }
-
-  $file->destination = file_destination(CUSTOM_BUG_PATH . $file->filename, FILE_EXISTS_REPLACE);
-
-  return array();
 }
 
 
 function foundbug_custom_admin_submit($form, &$form_state) {
 
+
+  if(($form_state['input']['foundbug_file_picture']['fid'] != 0))variable_set('foundbug_upload_fid', $form_state['input']['foundbug_file_picture']['fid']);
+  if ($form_state['input']['foundbug_imgpath'] == 'Alternative' && ($form_state['input']['foundbug_file_picture']['fid'] != 0)) {
+
+    variable_set('foundbug_imgpath', '<img src="' . file_create_url(file_load($form_state['input']['foundbug_file_picture']['fid'])->uri) . '">');
+    //form_state['input']['foundbug_imgpath']=file_create_url(file_load($form_state['input']['foundbug_file_picture']['fid'])->uri);
+    $form_state['values']['foundbug_imgpath']=file_create_url(file_load($form_state['input']['foundbug_file_picture']['fid'])->uri);
+  }
+  $file = file_load($form_state['input']['foundbug_file_picture']['fid']);
+  if (!empty($file)) {
+    $file->status = FILE_STATUS_PERMANENT;
+    file_save($file);
+  }
+
+  if($form_state['input']['foundbug_offset_y']>50) $form_state['values']['foundbug_offset_y'] = 50;
+  if($form_state['input']['foundbug_offset_y']<0) $form_state['values']['foundbug_offset_y'] = 0;
 
 
 }
@@ -243,14 +236,21 @@ function foundbug_custom_admin_submit($form, &$form_state) {
 function foundbug_custom_admin_validate($form, &$form_state) {
 
 
-  if ($form_state['input']['foundbug_imgpath'] == 'Alternative' && empty($form_state['input']['file_picture']['upload'])) {
+  if ($form_state['input']['foundbug_imgpath'] == 'Alternative' && empty($form_state['input']['foundbug_file_picture']['fid'])) {
     form_set_error('file_picture', t('You have not upload file.'));
   }
-  $percent = $form_state['input']['foundbug_offset_y'];
-  if(is_numeric($percent)) {
-    if($percent<0 ||$percent>50) form_set_error('foundbug_offset_y',t('Incorrect value of offset y.(Less 0 or more 50)'));
+  else{
 
-  }else{
+  }
+
+  $percent = $form_state['input']['foundbug_offset_y'];
+  if (is_numeric($percent)) {
+    /*if ($percent < 0 || $percent > 50) {
+      form_set_error('foundbug_offset_y', t('Incorrect value of offset y.(Less 0 or more 50)'));
+    }*/
+
+  }
+  else {
     form_set_error('foundbug_offset_y', t('Incorrect offset parameter.'));
   }
 
@@ -379,14 +379,14 @@ function foundbug_page_build(&$page) {
     ),
   ), 'setting');
   $block_class = 'foundbug_block_';
-  $block_class.=variable_get('foundbug_position_side','left');
-  $block_offset = variable_get('foundbug_position_tdside','top') . ':'.variable_get('foundbug_offset_y','50').'%' ;
+  $block_class .= variable_get('foundbug_position_side', 'left');
+  $block_offset = variable_get('foundbug_position_tdside', 'top') . ':' . variable_get('foundbug_offset_y', '50') . '%';
 
   $block = foundbug_block_view('foundbug');
   $content = $block['content'];
   $blockcolor = variable_get('foundbug_blockcolor', '');
   $page['content']['foundbug'] = array(
-    '#markup' => '<div id = "foundbug_block" class="'.$block_class.'" style="background-color: #' . $blockcolor . '; '. $block_offset.';">' .
+    '#markup' => '<div id = "foundbug_block" class="' . $block_class . '" style="background-color: #' . $blockcolor . '; ' . $block_offset . ';">' .
       $content .
       '</div>'
   );
