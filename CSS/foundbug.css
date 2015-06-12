@@ -1,15 +1,25 @@
-#block-foundbug-foundbug {
+.foundbug_block_left {
     position: fixed;
     border: 1px solid black;
     padding: 10px;
-    top: 200px;
     left: -50px;
-    /*background-color: #00ff00;*/
     z-index: 99;
 }
 
-#block-foundbug-foundbug:hover {
+.foundbug_block_left:hover {
     left: 0px;
+}
+
+.foundbug_block_right {
+    position: fixed;
+    border: 1px solid black;
+    padding: 10px;
+    right: -50px;
+    z-index: 99;
+}
+
+.foundbug_block_right:hover {
+    right: 0px;
 }
 
 .form-item {
@@ -19,7 +29,6 @@
 .bug-button {
 
     background-color: transparent;
-    /*background-image: url(bug.png);*/
     width: 48px;
     height: 48px;
     border: none;
@@ -48,7 +57,7 @@
 .foundbug_fix {
 
     background-color: transparent;
-    background-image: url(button_ok.png);
+    background-image: url(../image/button_ok.png);
     max-width: 80%;
     max-height: 80%;
     width: 20px;
@@ -60,7 +69,7 @@
 .foundbug_fixed {
 
     background-color: transparent;
-    background-image: url(button_ok_fixed.png);
+    background-image: url(../image/button_ok_fixed.png);
     width: 20px;
     height: 20px;
     border: none;
@@ -70,7 +79,7 @@
 .foundbug_delete {
 
     background-color: transparent;
-    background-image: url(delete.png);
+    background-image: url(../image/delete.png);
     width: 20px;
     height: 20px;
     border: none;

@@ -1,6 +1,8 @@
 <?php
 
 
+define('CUSTOM_BUG_PATH', 'public://foundbug_files/bugs/');
+
 /**
  * @file
  * Implements the basic functionality required to create and display an entity.
@@ -28,7 +30,7 @@ function foundbug_menu() {
   $items = array();
   $items['admin/settings/foundbug'] = array(
     'title' => 'Foundbug',
-    'description' => 'Admin foundbug',
+    'description' => t('Admin foundbug'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('foundbug_admin'),
     'access arguments' => array('administer bugreport entities'),
@@ -103,18 +105,12 @@ function foundbug_permission() {
   return $permissions;
 }
 
+/**
+ *
+ */
 function foundbug_admin() {
   $form = array();
 
-  /*$form['foundbug_imgpath'] = array(
-      '#type' => 'textfield',
-      '#title' => t(''),
-      '#default_value' => variable_get('foundbug_imgpath', ' '),
-      '#size' => 20,
-      '#maxlength' => 128,
-      '#description' => t("The path of block picture."),
-      '#required' => TRUE,
-  );*/
   $pics = array();
   $style = 'style = "width:48px"';
   $results = file_scan_directory(drupal_get_path('module', 'foundbug'), '(bug.png)');
@@ -123,27 +119,33 @@ function foundbug_admin() {
 
   }
 
-  $custompic = file_scan_directory(drupal_realpath('public://foundbug_files/bugs'), '(custombug./|jpg|png|gif|)');
+  $custompic = file_scan_directory(drupal_realpath(CUSTOM_BUG_PATH), '(custombug./|jpg|png|gif|)');
   $picpath = '';
-  foreach ($custompic as $pic) {
-    $picpath = file_create_url('public://foundbug_files/bugs/' . $pic->filename);
-    $pics[$picpath] = '<img class = "radio_bugs"  src="'
-      . $picpath
-      . '" '
+  if (empty($custompic)) {
+    $picpath = t('Alternative');
+    $pics['Alternative'] = $picpath;
+  }
+  else {
+    foreach ($custompic as $pic) {
+      $picpath = file_create_url(CUSTOM_BUG_PATH . '/' . $pic->filename);
+      $pics[$picpath] = '<img class = "radio_bugs"  src="'
+        . $picpath
+        . '" '
 
-      . '>';
+        . '>';
+    }
   }
 
 
   $form['foundbug_imgpath'] = array(
     '#type' => 'radios',
     '#title' => t('Image for block'),
-    '#default_value' => variable_get('foundbug_imgpath', '<img src="' . file_create_url(drupal_get_path('module', 'foundbug') . "/bug.png") . '">'),
+    '#default_value' => variable_get('foundbug_imgpath', '<img src="' . file_create_url(drupal_get_path('module', 'foundbug') . "/image/bug.png") . '">'),
     '#options' => $pics,
     '#description' => t('Choose pictures'),
 
   );
-  $form['file_picture'] = array(
+  $form['foundbug_file_picture'] = array(
 
     '#type' => 'managed_file',
     '#description' => t('Load your picture'),
@@ -159,33 +161,39 @@ function foundbug_admin() {
 
       'visible' => array(
 
-        ':input[name="foundbug_imgpath"]' => array('value'=>$picpath)),
+        ':input[name="foundbug_imgpath"]' => array('value' => $picpath)
       ),
+    ),
 
   );
-  $form['position'] = array(
+  $form['foundbug_position_side'] = array(
     '#type' => 'radios',
     '#title' => t('Position of the block'),
     '#options' => array(
-      'letf_top',
-      'right_top',
-      'left_bottom',
-      'right_bottom',
-      'alternative'
+      'left'=>t('Letf'),
+      'right'=>t('Right'),
 
     ),
+    '#default_value'=>variable_get('foundbug_position_side','left'),
   );
-  $form['position_x'] = array(
+  $form['foundbug_position_tdside'] = array(
+    '#type' => 'radios',
+    '#options' => array(
+      'top'=>t('Top'),
+      'bottom'=>t('Bottom'),
+
+    ),
+    '#default_value'=>variable_get('foundbug_position_tdside','top'),
+    '#description' => t("The side position of the block."),
+  );
+  $form['foundbug_offset_y'] = array(
     '#type' => 'textfield',
     '#size' => 6,
     '#maxlength' => 6,
-    '#description' => t("The X position of the block."),
-    '#states' => array(
+    '#description' => t("The Y offset of the block."),
+    '#default_value'=>variable_get('foundbug_offset_y','50'),
+    '#required' => TRUE,
 
-    'visible' => array(
-
-      ':input[name="position"]' => array('value' => 4),
-    )),
   );
 
   $form['foundbug_blockcolor'] = array(
@@ -198,6 +206,7 @@ function foundbug_admin() {
     '#required' => TRUE,
   );
   $form['#submit'][] = 'foundbug_custom_admin_submit';
+  $form['#validate'][] = 'foundbug_custom_admin_validate';
   return system_settings_form($form);
 
 }
@@ -206,17 +215,20 @@ function _change_filename(stdClass $file) {
 
   $file->filename = 'custombug.' . pathinfo($file->filename, PATHINFO_EXTENSION);
 
-  $uri = 'public://foundbug_files/bugs/custombug.jpg';
+  $uri = CUSTOM_BUG_PATH . '/custombug.jpg';
   $ex = file_load_multiple(array(), array('uri' => $uri));
-  try {
-    foreach ($ex as $file_to_del) {
-      file_delete($file_to_del);
-    }
-  } catch (Exception $exc) {
+  if (!empty($ex)) {
+    try {
+      foreach ($ex as $file_to_del) {
 
+        file_delete($file_to_del);
+      }
+    } catch (Exception $exc) {
+
+    }
   }
 
-  $file->destination = file_destination('public://foundbug_files/bugs/' . $file->filename, FILE_EXISTS_REPLACE);
+  $file->destination = file_destination(CUSTOM_BUG_PATH . $file->filename, FILE_EXISTS_REPLACE);
 
   return array();
 }
@@ -224,10 +236,25 @@ function _change_filename(stdClass $file) {
 
 function foundbug_custom_admin_submit($form, &$form_state) {
 
-  $file = file_load($form_state['values']['file_picture']);
-  dpm($form_state);
+
+
 }
 
+function foundbug_custom_admin_validate($form, &$form_state) {
+
+
+  if ($form_state['input']['foundbug_imgpath'] == 'Alternative' && empty($form_state['input']['file_picture']['upload'])) {
+    form_set_error('file_picture', t('You have not upload file.'));
+  }
+  $percent = $form_state['input']['foundbug_offset_y'];
+  if(is_numeric($percent)) {
+    if($percent<0 ||$percent>50) form_set_error('foundbug_offset_y',t('Incorrect value of offset y.(Less 0 or more 50)'));
+
+  }else{
+    form_set_error('foundbug_offset_y', t('Incorrect offset parameter.'));
+  }
+
+}
 
 /*
  * function for debug
@@ -297,7 +324,7 @@ function foundbug_list() {
 }
 
 /*
- * form popup
+ * popup the form to send bugreport
  */
 function foundbug_callback($ajax) {
 
@@ -326,39 +353,51 @@ function foundbug_callback($ajax) {
 
 
 /**
- * Implements hook_page_build().
+ *
+ * Implements hook_page_build()
  */
 function foundbug_page_build(&$page) {
   if (!user_access('create any bugreport')) {
     return;
   }
+  ctools_include('modal');
+  ctools_modal_add_js();
+  drupal_add_js(drupal_get_path('module', 'foundbug') . '/JS/foundbug.js');
+  drupal_add_js(array(
+    'bug-style' => array(
+      'modalSize' => array(
+        'type' => 'relative',
+        'width' => 'auto',
+        'height' => 'auto',
+        'addWidth' => 10,
+        'addHeight' => 10,
+        'contentRight' => 0,
+        'contentBottom' => 0,
+      ),
+      //Animation mode
+      'animation' => 'fadeIn',
+    ),
+  ), 'setting');
+  $block_class = 'foundbug_block_';
+  $block_class.=variable_get('foundbug_position_side','left');
+  $block_offset = variable_get('foundbug_position_tdside','top') . ':'.variable_get('foundbug_offset_y','50').'%' ;
+
   $block = foundbug_block_view('foundbug');
   $content = $block['content'];
   $blockcolor = variable_get('foundbug_blockcolor', '');
   $page['content']['foundbug'] = array(
-    '#markup' => '<div id="block-foundbug-foundbug"
-                                                    class="block block-foundbug contextual-links-region first last odd" style="background-color: #' . $blockcolor . '">' .
+    '#markup' => '<div id = "foundbug_block" class="'.$block_class.'" style="background-color: #' . $blockcolor . '; '. $block_offset.';">' .
       $content .
       '</div>'
   );
 
 }
 
+
 /**
- * Implements hook_block_info().
+ * @param string $delta
+ * @return array
  */
-/*function foundbug_block_info() {
-
-  $blocks['foundbug'] = array(
-    'info' => t('Foundbug'), //Имя, которое будет показано в списке блоков.
-    'cache' => DRUPAL_CACHE_PER_ROLE, //По умолчанию
-    'status' => TRUE,
-    'region' => 'sidebar_first',
-  );
-
-  return $blocks;
-}*/
-
 function foundbug_block_view($delta = '') {
   $blocks = array();
 
@@ -367,21 +406,7 @@ function foundbug_block_view($delta = '') {
       if (user_access('create any bugreport')) {
         ctools_include('modal');
         ctools_modal_add_js();
-        drupal_add_js(array(
-          'bug-style' => array(
-            'modalSize' => array(
-              'type' => 'relative',
-              'width' => 'auto',
-              'height' => 'auto',
-              'addWidth' => 10,
-              'addHeight' => 10,
-              'contentRight' => 0,
-              'contentBottom' => 0,
-            ),
-            //Animation mode
-            'animation' => 'fadeIn',
-          ),
-        ), 'setting');
+
         $bugpath = variable_get('foundbug_imgpath', ' ');
         $blocks['subject'] = t('');
         $blocks['content'] = l('<img class="bug-button" src = "' . $bugpath . '">', '/foundbug/form/js', array(
@@ -389,7 +414,7 @@ function foundbug_block_view($delta = '') {
           'html' => TRUE
         )); /// $entries
 
-        drupal_add_css(drupal_get_path('module', 'foundbug') . "/foundbug.css");
+        drupal_add_css(drupal_get_path('module', 'foundbug') . '/CSS/foundbug.css');
       }
     }
   }
@@ -417,21 +442,21 @@ function foundbug_theme() {
 /*
  * Form submit handler: Submits foundbug_send_form.
  */
-function foundbug_send_form_submit($form, &$form_submit) {
+function foundbug_send_form_submit($form, &$form_state) {
   //create new bugreport
-  $report = $form_submit['input']['bugreport'];
-  $email = $form_submit['input']['email_user'];
-  $name = $form_submit['input']['name_user'];
+  $report = $form_state['input']['text'];
+  $email = $form_state['input']['email'];
+  $name = $form_state['input']['name'];
 
   $parameters = array(
     'body' => $report,
     'email' => $email,
     'name' => $name,
-    'env' => ' User agent: ' . getenv('HTTP_USER_AGENT') . ' Remote adress: ' . getenv('REMOTE_ADDR'),
+    'env' => t(' User agent: ' . getenv('HTTP_USER_AGENT') . ' Remote adress: ' . getenv('REMOTE_ADDR')),
     'path' => '',
 
   );
-  $file = $form_submit['values']['file'];
+  $file = $form_state['values']['file'];
   if (!empty($file)) {
     $file->status = FILE_STATUS_PERMANENT;
     file_save($file);
@@ -444,7 +469,7 @@ function foundbug_send_form_submit($form, &$form_submit) {
 
   $from = variable_get('site_mail', 'admin@example.com');
   $language = language_default();
-  $params = $form_submit;
+  $params = $form_state;
   drupal_mail('foundbug', 'newbug', 'inhellimaybo@gmail.com', $language, $params, $from, TRUE);
 
   //$commands[] = ctools_modal_command_dismiss();
@@ -467,20 +492,28 @@ function foundbug_send_form_submit($form, &$form_submit) {
 function foundbug_send_form_validate($form, &$form_state) {
 
 
-  if (empty($form_state['input']['name_user'])) {
+  if (empty($form_state['input']['name'])) {
     form_set_error('name', t('You have not input name.'));
   }
   else {
-    $form_state['value']['name'] = $form_state['input']['name_user'];
+    $form_state['value']['name'] = $form_state['input']['name'];
 
   }
 
-  if (!valid_email_address($form_state['input']['email_user'])) {
+  if (!valid_email_address($form_state['input']['email'])) {
     form_set_error('email', t('You have input invalid email.'));
   }
+  else {
+    $form_state['value']['email'] = $form_state['input']['email'];
 
-  if (empty($form_state['input']['bugreport'])) {
+  }
+
+  if (empty($form_state['input']['text'])) {
     form_set_error('text', t('You have not input bugreport.'));
+  }
+  else {
+    $form_state['value']['text'] = $form_state['input']['text'];
+
   }
 
   $validators = array(
@@ -492,9 +525,6 @@ function foundbug_send_form_validate($form, &$form_state) {
   if ($file = file_save_upload('file', $validators, 'public://foundbug_files')) {
     $form_state['values']['file'] = $file; //
   }
-  /*else {
-    form_set_error('file', 'Файл не был загружен');
-  }*/
 
 
 }
@@ -503,7 +533,7 @@ function foundbug_send_form_validate($form, &$form_state) {
 /*
  * Form for popup ctools
  */
-function foundbug_send_form($form, &$form_submit) {
+function foundbug_send_form($form, &$form_state) {
 
   $form = array(
     '#attributes' => array('enctype' => 'multipart/form-data'),
@@ -514,7 +544,6 @@ function foundbug_send_form($form, &$form_submit) {
 
   $form['name'] = array(
     '#type' => 'textfield',
-    '#name' => 'name_user',
     '#size' => '30',
     '#title' => t('Name'),
     '#label' => 'Name:',
@@ -526,7 +555,6 @@ function foundbug_send_form($form, &$form_submit) {
   }
   $form['email'] = array(
     '#type' => 'textfield',
-    '#name' => 'email_user',
     '#size' => '30',
     '#title' => t('Email'),
     '#label' => 'Email:',
@@ -534,7 +562,6 @@ function foundbug_send_form($form, &$form_submit) {
   $form['text'] = array(
     '#title' => t('Bugreport'),
     '#type' => 'textarea',
-    '#name' => 'bugreport',
     '#size' => '120',
     '#label' => 'Bugreport:',
   );
@@ -603,7 +630,7 @@ function foundbug_entity_info() {
     'module' => 'foundbug',
     'bundles' => array(
       'first_example_bundle' => array(
-        'label' => 'First example bundle',
+        'label' => t('First example bundle'),
         // 'admin' key is used by the Field UI to provide field and
         // display UI pages.
         'admin' => array(
@@ -865,7 +892,6 @@ function bugreport_delete($entity) {
 
 
   $result['#commands'][] = ajax_command_invoke('#id_' . $entity->id, 'hide');
-  //$result['#commands'][] = ajax_command_add_css('tr#id_'.$entity->id,'display:none');
 
   return $result;
 
