@@ -75,7 +75,7 @@ function foundbug_admin_form($form, &$form_state) {
 
   $form['foundbug_mail_to_send'] = array(
     '#type' => 'textfield',
-    '#default_value' => variable_get('foundbug_mail_to_send', variable_get('site_mail', 'null')),
+    '#default_value' => variable_get('foundbug_mail_to_send', variable_get('site_mail', 'mail')),
     '#required' => TRUE,
     '#states' => array(
 
@@ -147,12 +147,13 @@ function foundbug_admin_form_submit($form, &$form_state) {
     variable_set('foundbug_upload_fid', $form_state['values']['foundbug_file_picture']['fid']);
     variable_set('foundbug_imgpath', '<img src="' . file_create_url(file_load($form_state['values']['foundbug_file_picture']['fid'])->uri) . '">');
     $form_state['values']['foundbug_imgpath'] = file_create_url(file_load($form_state['values']['foundbug_file_picture']['fid'])->uri);
+    $file = file_load($form_state['values']['foundbug_file_picture']['fid']);
+    if (!empty($file)) {
+      $file->status = FILE_STATUS_PERMANENT;
+      file_save($file);
+    }
   }
-  $file = file_load($form_state['values']['foundbug_file_picture']['fid']);
-  if (!empty($file)) {
-    $file->status = FILE_STATUS_PERMANENT;
-    file_save($file);
-  }
+
 
   if ($form_state['values']['foundbug_offset_y'] > 50) {
     $form_state['values']['foundbug_offset_y'] = 50;
@@ -160,7 +161,7 @@ function foundbug_admin_form_submit($form, &$form_state) {
   if ($form_state['values']['foundbug_offset_y'] < 0) {
     $form_state['values']['foundbug_offset_y'] = 0;
   }
-
+  dpm($form_state);
 }
 
 /**
