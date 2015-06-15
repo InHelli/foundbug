@@ -112,7 +112,6 @@ function foundbug_admin() {
   $form = array();
 
   $pics = array();
-  $style = 'style = "width:48px"';
   $results = file_scan_directory(drupal_get_path('module', 'foundbug'), '(bug.png)');
   foreach ($results as $pic) {
     $pics[file_create_url($pic->uri)] = '<img class = "radio_bugs" src="' . file_create_url($pic->uri) . '">';
@@ -121,14 +120,15 @@ function foundbug_admin() {
   $custom_fid = variable_get('foundbug_upload_fid', 0);
   $picpath = '';
   $file = file_load($custom_fid);
-  if ((!empty($file))&&file_exists($file->uri)) {
+  if ((!empty($file)) && file_exists($file->uri)) {
     $picpath = file_create_url(file_load($custom_fid)->uri);
     $pics[$picpath] = '<img class = "radio_bugs"  src="'
       . $picpath
       . '" '
 
       . '>';
-  }else {
+  }
+  else {
     $picpath = t('Alternative');
     $pics['Alternative'] = $picpath;
   }
@@ -150,7 +150,12 @@ function foundbug_admin() {
     //.drupal_get_path('module','foundbug'),
     '#upload_validators' => array(
       'file_validate_extensions' => array('png jpg gif'),
+      'file_validate_image_resolution' => array('400x400', '48x48'),
 
+
+    ),
+    '#submit' => array(
+      'foundbug_file_exist' => array(),
     ),
     '#states' => array(
 
@@ -163,6 +168,28 @@ function foundbug_admin() {
     ),
 
   );
+
+  $form['foundbug_is_notice_need'] = array(
+    '#title' => t('E-mail for sending notices'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('foundbug_is_notice_need',1),
+  );
+
+  $form['foundbug_mail_to_send'] = array(
+    '#type' => 'textfield',
+    '#default_value' => variable_get('foundbug_mail_to_send', variable_get('site_mail', 'null')),
+    '#required' => TRUE,
+    '#states' => array(
+
+      // Hide the settings when the cancel notify checkbox is disabled.
+
+      'visible' => array(
+
+        ':input[name="foundbug_is_notice_need"]' => array('checked' => TRUE)
+      ),
+    ),
+  );
+
   $form['foundbug_position_side'] = array(
     '#type' => 'radios',
     '#title' => t('Position of the block'),
@@ -210,25 +237,36 @@ function foundbug_admin() {
 
 }
 
+function foundbug_file_exist($form,&$form_state){
+  dpm($form_state);
+}
 
 function foundbug_custom_admin_submit($form, &$form_state) {
 
 
-  if(($form_state['input']['foundbug_file_picture']['fid'] != 0))variable_set('foundbug_upload_fid', $form_state['input']['foundbug_file_picture']['fid']);
-  if ($form_state['input']['foundbug_imgpath'] == 'Alternative' && ($form_state['input']['foundbug_file_picture']['fid'] != 0)) {
+  if (($form_state['input']['foundbug_file_picture']['fid'] != 0)) {
+    variable_set('foundbug_upload_fid', $form_state['input']['foundbug_file_picture']['fid']);
+    variable_set('foundbug_imgpath', '<img src="' . file_create_url(file_load($form_state['input']['foundbug_file_picture']['fid'])->uri) . '">');
+    $form_state['values']['foundbug_imgpath'] = file_create_url(file_load($form_state['input']['foundbug_file_picture']['fid'])->uri);
+  }
+  /*if ($form_state['input']['foundbug_imgpath'] == 'Alternative' && ($form_state['input']['foundbug_file_picture']['fid'] != 0)) {
 
     variable_set('foundbug_imgpath', '<img src="' . file_create_url(file_load($form_state['input']['foundbug_file_picture']['fid'])->uri) . '">');
     //form_state['input']['foundbug_imgpath']=file_create_url(file_load($form_state['input']['foundbug_file_picture']['fid'])->uri);
-    $form_state['values']['foundbug_imgpath']=file_create_url(file_load($form_state['input']['foundbug_file_picture']['fid'])->uri);
-  }
+    $form_state['values']['foundbug_imgpath'] = file_create_url(file_load($form_state['input']['foundbug_file_picture']['fid'])->uri);
+  }*/
   $file = file_load($form_state['input']['foundbug_file_picture']['fid']);
   if (!empty($file)) {
     $file->status = FILE_STATUS_PERMANENT;
     file_save($file);
   }
 
-  if($form_state['input']['foundbug_offset_y']>50) $form_state['values']['foundbug_offset_y'] = 50;
-  if($form_state['input']['foundbug_offset_y']<0) $form_state['values']['foundbug_offset_y'] = 0;
+  if ($form_state['input']['foundbug_offset_y'] > 50) {
+    $form_state['values']['foundbug_offset_y'] = 50;
+  }
+  if ($form_state['input']['foundbug_offset_y'] < 0) {
+    $form_state['values']['foundbug_offset_y'] = 0;
+  }
 
 
 }
@@ -239,7 +277,7 @@ function foundbug_custom_admin_validate($form, &$form_state) {
   if ($form_state['input']['foundbug_imgpath'] == 'Alternative' && empty($form_state['input']['foundbug_file_picture']['fid'])) {
     form_set_error('file_picture', t('You have not upload file.'));
   }
-  else{
+  else {
 
   }
 

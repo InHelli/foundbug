@@ -1,6 +1,6 @@
 .foundbug_block_left {
     position: fixed;
-    border: 1px solid black;
+    border: 1px solid #000000;
     padding: 10px;
     left: -50px;
     z-index: 99;
@@ -12,7 +12,7 @@
 
 .foundbug_block_right {
     position: fixed;
-    border: 1px solid black;
+    border: 1px solid #000000;
     padding: 10px;
     right: -50px;
     z-index: 99;
