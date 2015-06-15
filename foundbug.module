@@ -2,16 +2,14 @@
 
 
 define('CUSTOM_BUG_PATH', 'public://foundbug_files/bugs/');
-
+module_load_include('inc', 'foundbug', 'inc/foundbug.entity');
 /**
  * @file
- * Implements the basic functionality required to create and display an entity.
+ * Basic functional of the foundbug module
  *
- */
-
-/*
- * Help of module
- *
+ * @param $path
+ * @param $arg
+ * @return string
  */
 function foundbug_help($path, $arg) {
   switch ($path) {
@@ -32,14 +30,11 @@ function foundbug_menu() {
     'title' => 'Foundbug',
     'description' => t('Admin foundbug'),
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('foundbug_admin'),
+    'page arguments' => array('foundbug_admin_form'),
     'access arguments' => array('administer bugreport entities'),
     'type' => MENU_NORMAL_ITEM,
-  );
-  $items['foundbug/debug'] = array(
-    'page callback' => 'foundbug_debug',
-    'access arguments' => array('administer bugreport entities'),
-    'type' => MENU_CALLBACK,
+    'file'=>'foundbug.admin.inc',
+    'file path'=>drupal_get_path('module','foundbug').'/inc',
   );
   $items['foundbug/form/%ctools_js'] = array(
     'page callback' => 'foundbug_callback',
@@ -48,7 +43,6 @@ function foundbug_menu() {
     'type' => MENU_CALLBACK,
 
   );
-
   $items['admin/structure/foundbug/manage'] = array(
     'title' => 'Administer foundbugs',
     'page callback' => 'foundbug_list',
@@ -105,261 +99,7 @@ function foundbug_permission() {
   return $permissions;
 }
 
-/**
- *
- */
-function foundbug_admin() {
-  $form = array();
 
-  $pics = array();
-  $results = file_scan_directory(drupal_get_path('module', 'foundbug'), '(bug.png)');
-  foreach ($results as $pic) {
-    $pics[file_create_url($pic->uri)] = '<img class = "radio_bugs" src="' . file_create_url($pic->uri) . '">';
-
-  }
-  $custom_fid = variable_get('foundbug_upload_fid', 0);
-  $picpath = '';
-  $file = file_load($custom_fid);
-  if ((!empty($file)) && file_exists($file->uri)) {
-    $picpath = file_create_url(file_load($custom_fid)->uri);
-    $pics[$picpath] = '<img class = "radio_bugs"  src="'
-      . $picpath
-      . '" '
-
-      . '>';
-  }
-  else {
-    $picpath = t('Alternative');
-    $pics['Alternative'] = $picpath;
-  }
-
-
-  $form['foundbug_imgpath'] = array(
-    '#type' => 'radios',
-    '#title' => t('Image for block'),
-    '#default_value' => variable_get('foundbug_imgpath', '<img src="' . file_create_url(drupal_get_path('module', 'foundbug') . "/image/bug.png") . '">'),
-    '#options' => $pics,
-    '#description' => t('Choose pictures'),
-
-  );
-  $form['foundbug_file_picture'] = array(
-
-    '#type' => 'managed_file',
-    '#description' => t('Load your picture'),
-    '#upload_location' => 'public://foundbug_files/bugs',
-    //.drupal_get_path('module','foundbug'),
-    '#upload_validators' => array(
-      'file_validate_extensions' => array('png jpg gif'),
-      'file_validate_image_resolution' => array('400x400', '48x48'),
-
-
-    ),
-    '#submit' => array(
-      'foundbug_file_exist' => array(),
-    ),
-    '#states' => array(
-
-      // Hide the settings when the cancel notify checkbox is disabled.
-
-      'visible' => array(
-
-        ':input[name="foundbug_imgpath"]' => array('value' => $picpath)
-      ),
-    ),
-
-  );
-
-  $form['foundbug_is_notice_need'] = array(
-    '#title' => t('E-mail for sending notices'),
-    '#type' => 'checkbox',
-    '#default_value' => variable_get('foundbug_is_notice_need',1),
-  );
-
-  $form['foundbug_mail_to_send'] = array(
-    '#type' => 'textfield',
-    '#default_value' => variable_get('foundbug_mail_to_send', variable_get('site_mail', 'null')),
-    '#required' => TRUE,
-    '#states' => array(
-
-      // Hide the settings when the cancel notify checkbox is disabled.
-
-      'visible' => array(
-
-        ':input[name="foundbug_is_notice_need"]' => array('checked' => TRUE)
-      ),
-    ),
-  );
-
-  $form['foundbug_position_side'] = array(
-    '#type' => 'radios',
-    '#title' => t('Position of the block'),
-    '#options' => array(
-      'left' => t('Letf'),
-      'right' => t('Right'),
-
-    ),
-    '#default_value' => variable_get('foundbug_position_side', 'left'),
-  );
-  $form['foundbug_position_tdside'] = array(
-    '#type' => 'radios',
-    '#options' => array(
-      'top' => t('Top'),
-      'bottom' => t('Bottom'),
-
-    ),
-    '#default_value' => variable_get('foundbug_position_tdside', 'top'),
-    '#description' => t("The side position of the block."),
-  );
-  $form['foundbug_offset_y'] = array(
-    '#type' => 'textfield',
-    '#size' => 6,
-    '#maxlength' => 6,
-    '#description' => t("The Y offset of the block."),
-    '#default_value' => variable_get('foundbug_offset_y', '50'),
-    '#required' => TRUE,
-
-  );
-
-  $form['foundbug_blockcolor'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Color of the block'),
-    '#default_value' => variable_get('foundbug_blockcolor', '00FF00'),
-    '#size' => 6,
-    '#maxlength' => 6,
-    '#description' => t("The code of block color."),
-    '#required' => TRUE,
-  );
-  $form['#submit'][] = 'foundbug_custom_admin_submit';
-  $form['#validate'][] = 'foundbug_custom_admin_validate';
-
-
-  return system_settings_form($form);
-
-}
-
-function foundbug_file_exist($form,&$form_state){
-  dpm($form_state);
-}
-
-function foundbug_custom_admin_submit($form, &$form_state) {
-
-
-  if (($form_state['input']['foundbug_file_picture']['fid'] != 0)) {
-    variable_set('foundbug_upload_fid', $form_state['input']['foundbug_file_picture']['fid']);
-    variable_set('foundbug_imgpath', '<img src="' . file_create_url(file_load($form_state['input']['foundbug_file_picture']['fid'])->uri) . '">');
-    $form_state['values']['foundbug_imgpath'] = file_create_url(file_load($form_state['input']['foundbug_file_picture']['fid'])->uri);
-  }
-  /*if ($form_state['input']['foundbug_imgpath'] == 'Alternative' && ($form_state['input']['foundbug_file_picture']['fid'] != 0)) {
-
-    variable_set('foundbug_imgpath', '<img src="' . file_create_url(file_load($form_state['input']['foundbug_file_picture']['fid'])->uri) . '">');
-    //form_state['input']['foundbug_imgpath']=file_create_url(file_load($form_state['input']['foundbug_file_picture']['fid'])->uri);
-    $form_state['values']['foundbug_imgpath'] = file_create_url(file_load($form_state['input']['foundbug_file_picture']['fid'])->uri);
-  }*/
-  $file = file_load($form_state['input']['foundbug_file_picture']['fid']);
-  if (!empty($file)) {
-    $file->status = FILE_STATUS_PERMANENT;
-    file_save($file);
-  }
-
-  if ($form_state['input']['foundbug_offset_y'] > 50) {
-    $form_state['values']['foundbug_offset_y'] = 50;
-  }
-  if ($form_state['input']['foundbug_offset_y'] < 0) {
-    $form_state['values']['foundbug_offset_y'] = 0;
-  }
-
-
-}
-
-function foundbug_custom_admin_validate($form, &$form_state) {
-
-
-  if ($form_state['input']['foundbug_imgpath'] == 'Alternative' && empty($form_state['input']['foundbug_file_picture']['fid'])) {
-    form_set_error('file_picture', t('You have not upload file.'));
-  }
-  else {
-
-  }
-
-  $percent = $form_state['input']['foundbug_offset_y'];
-  if (is_numeric($percent)) {
-    /*if ($percent < 0 || $percent > 50) {
-      form_set_error('foundbug_offset_y', t('Incorrect value of offset y.(Less 0 or more 50)'));
-    }*/
-
-  }
-  else {
-    form_set_error('foundbug_offset_y', t('Incorrect offset parameter.'));
-  }
-
-}
-
-/*
- * function for debug
- */
-function foundbug_debug() {
-
-
-}
-
-/*
- * load page with entities
- *
- * @return content with table
- */
-function foundbug_list() {
-  if (!user_access('administer bugreport entities')) {
-    drupal_access_denied();
-    return;
-  }
-  $content = array();
-  // Load all of our entities.
-  $entities = bugreport_load_multiple();
-  if (!empty($entities)) {
-    drupal_add_library('system', 'drupal.ajax');
-    drupal_add_library('system', 'jquery.form');
-    foreach ($entities as $entity) {
-      // Create tabular rows for our entities.
-      $fix = 'fix';
-      if ($entity->fixed == 0) {
-        $fix = t('<div id=' . $entity->id . ' class="foundbug_fix">fix</div>');
-      }
-      else {
-        $fix = t('<div  id=' . $entity->id . ' class="foundbug_fixed">fixed</div>');
-      }
-
-      $rows[] = array(
-        'data' => array(
-          'id' => $entity->id,
-          'body' => l($entity->body, 'foundbug/report/' . $entity->id),
-          'fix' => l($fix, 'foundbug/report/' . $entity->id . '/fix', array(
-            'attributes' => array('class' => array('use-ajax')),
-            'html' => TRUE
-          )),
-          'delete' => l('<div class ="foundbug_delete">delete</div>', 'foundbug/report/' . $entity->id . '/delete', array(
-            'attributes' => array('class' => array('use-ajax')),
-            'html' => TRUE
-          ))
-        ),
-        'id' => array('id_' . $entity->id),
-      );
-    }
-    // Put our entities into a themed table. See theme_table() for details.
-    $content['entity_table'] = array(
-      '#theme' => 'table',
-      '#rows' => $rows,
-      '#header' => array(t('ID'), t('Body'), t('Fix'), t('Delete')),
-    );
-  }
-  else {
-    // There were no entities. Tell the user.
-    $content[] = array(
-      '#type' => 'item',
-      '#markup' => t('No bugreport entities currently exist.'),
-    );
-  }
-  return $content;
-}
 
 /*
  * popup the form to send bugreport
@@ -393,6 +133,7 @@ function foundbug_callback($ajax) {
 /**
  *
  * Implements hook_page_build()
+ *
  */
 function foundbug_page_build(&$page) {
   if (!user_access('create any bugreport')) {
@@ -424,17 +165,18 @@ function foundbug_page_build(&$page) {
   $content = $block['content'];
   $blockcolor = variable_get('foundbug_blockcolor', '');
   $page['content']['foundbug'] = array(
-    '#markup' => '<div id = "foundbug_block" class="' . $block_class . '" style="background-color: #' . $blockcolor . '; ' . $block_offset . ';">' .
-      $content .
-      '</div>'
+    '#prefix'=>'<div id = "foundbug_block" class="' . $block_class . '" style="background-color: #' . $blockcolor . '; ' . $block_offset . ';">',
+    '#markup' =>$content,
+     '#sufix'=> '</div>',
   );
 
 }
 
 
 /**
- * @param string $delta
- * @return array
+ *
+ * @param string $delta 'type of block view '
+ * @return array 'block view'
  */
 function foundbug_block_view($delta = '') {
   $blocks = array();
@@ -473,18 +215,17 @@ function foundbug_theme() {
     ),
 
   );
-
-
 }
 
 /*
  * Form submit handler: Submits foundbug_send_form.
  */
 function foundbug_send_form_submit($form, &$form_state) {
+
   //create new bugreport
-  $report = $form_state['input']['text'];
-  $email = $form_state['input']['email'];
-  $name = $form_state['input']['name'];
+  $report = check_plain($form_state['values']['text']);
+  $email = $form_state['values']['email'];
+  $name = check_plain($form_state['values']['name']);
 
   $parameters = array(
     'body' => $report,
@@ -509,15 +250,11 @@ function foundbug_send_form_submit($form, &$form_state) {
   $language = language_default();
   $params = $form_state;
   drupal_mail('foundbug', 'newbug', 'inhellimaybo@gmail.com', $language, $params, $from, TRUE);
-
-  //$commands[] = ctools_modal_command_dismiss();
-
-  //$commands[] = ctools_ajax_command_reload();
-  $html = '<a href="#" class="ctools-close-modal"> <div style="   margin: 10px 40%;
-                                                                    border: 1px solid;
-                                                                    text-align: center;"> OK </div></a>';
+  $html = l('<div class = "ok_button"> OK </div>','#',array(
+    'attributes' => array('class' => array('ctools-close-modal')),
+    'html' => TRUE
+  ));
   $commands[] = ctools_modal_command_display('Bug sended', $html);
-  //$commands[] = ctools_modal_command_dismiss(t('Login Success'));
   print ajax_render($commands);
   exit;
 
@@ -530,28 +267,16 @@ function foundbug_send_form_submit($form, &$form_state) {
 function foundbug_send_form_validate($form, &$form_state) {
 
 
-  if (empty($form_state['input']['name'])) {
+  if (empty($form_state['values']['name'])) {
     form_set_error('name', t('You have not input name.'));
   }
-  else {
-    $form_state['value']['name'] = $form_state['input']['name'];
 
-  }
-
-  if (!valid_email_address($form_state['input']['email'])) {
+  if (!valid_email_address($form_state['values']['email'])) {
     form_set_error('email', t('You have input invalid email.'));
   }
-  else {
-    $form_state['value']['email'] = $form_state['input']['email'];
 
-  }
-
-  if (empty($form_state['input']['text'])) {
+  if (empty($form_state['values']['text'])) {
     form_set_error('text', t('You have not input bugreport.'));
-  }
-  else {
-    $form_state['value']['text'] = $form_state['input']['text'];
-
   }
 
   $validators = array(
@@ -636,302 +361,4 @@ function foundbug_mail($key, &$message, $params) {
       break;
     }
   }
-}
-
-//                                        =================================ENTITY========================
-
-/*
- * implement hook_entity_info
- */
-function foundbug_entity_info() {
-
-  $info = array();
-
-  $info['bugreport'] = array(
-    'label' => t('Bugreport'),
-    'base table' => 'bugreports',
-    'entity class' => 'Bugreport',
-    'controller class' => 'BugreportController',
-    //'creation callback' => 'bugreport_create',
-    'load hook' => 'bugreport_load',
-    //'fieldable' => TRUE,
-    'uri callback' => 'bugreport_uri',
-    'entity keys' => array(
-      'id' => 'id',
-    ),
-    'view modes' => array(
-      'full' => array(
-        'label' => t('Default'),
-        'custom settings' => FALSE,
-      ),
-    ),
-    'module' => 'foundbug',
-    'bundles' => array(
-      'first_example_bundle' => array(
-        'label' => t('First example bundle'),
-        // 'admin' key is used by the Field UI to provide field and
-        // display UI pages.
-        'admin' => array(
-          'path' => 'admin/structure/foundbug/manage',
-          'access arguments' => array('administer bugreport entities'),
-        ),
-      ),
-    ),
-  );
-
-  return $info;
-}
-
-/*
- * Fetch a bugreport object.
- * function for load entity. Use bugreport_load_multiple.
- *
- * @param int $basic_id
- *   Integer specifying the entity id.
- * @param bool $reset
- *   A boolean indicating that the internal cache should be reset.
- * @return object
- *   A fully-loaded $basic object or FALSE if it cannot be loaded.
- *
- */
-function bugreport_load($basic_id = NULL, $reset = FALSE) {
-  $basic_ids = (isset($basic_id) ? array($basic_id) : array());
-  $basic = bugreport_load_multiple($basic_ids, array(), $reset);
-  return $basic ? reset($basic) : FALSE;
-}
-
-/*
- * Use for multiple load entities
- */
-function bugreport_load_multiple($basic_ids = FALSE, $conditions = array(), $reset = FALSE) {
-  return entity_load('bugreport', $basic_ids, $conditions, $reset);
-}
-
-/*
- * implement entity
- */
-/*function bugreport_create($values = array()) {
-  return entity_get_controller('bugreport')->create($values);
-}*/
-
-/*
- * class Bugreport
- */
-
-class Bugreport extends Entity {
-
-  public $body = " ";
-  public $email = " ";
-  public $weight = 0;
-  public $fixed = 0;
-
-  public function __construct($values = array()) {
-    if (in_array('body', $values)) {
-      $this->body = $values['body'];
-    }
-    if (in_array('email', $values)) {
-      $this->email = $values['email'];
-    }
-    parent::__construct($values, 'bugreport');
-  }
-
-  protected function defaultLabel() {
-    return $this->$body;
-  }
-
-
-}
-
-/*
- * class controler for bugreport
- */
-
-class BugreportController extends EntityAPIController {
-  public function __construct($entityType) {
-    parent::__construct($entityType);
-  }
-
-  /*
-   * create entity
-   *
-   * @param array values
-   *  array of values to create
-   */
-  public function create(array $values = array()) {
-    // Add values that are specific to our Entity
-
-    $values += array(
-      'is_new' => TRUE,
-      'body' => $values['body'],
-      'email' => $values['email'],
-      'created' => time(),
-      'name' => $values['name'],
-      'env' => $values['env'],
-    );
-
-    $ent = parent::create($values);
-    return $ent;
-  }
-
-
-  /*
-   *  delete entity
-   */
-  public function delete($entity) {
-    $this->deleteMultiple(array($entity));
-  }
-
-  /*
-   * delete multiple entities
-   */
-  public function deleteMultiple($entities) {
-    $ids = array();
-    if (!empty($entities)) {
-      $transaction = db_transaction();
-      try {
-        foreach ($entities as $entity) {
-          // Invoke hook_entity_delete().
-          module_invoke_all('entity_delete', $entity, 'bugreport');
-          field_attach_delete('bugreport', $entity);
-          $ids[] = $entity->id;
-        }
-        db_delete('bugreports')
-          ->condition('id', $ids, 'IN')
-          ->execute();
-      } catch (Exception $e) {
-        $transaction->rollback();
-        watchdog_exception('bugreport', $e);
-        throw $e;
-      }
-    }
-  }
-}
-
-/**
- * Implements the uri callback.
- */
-function bugreport_uri($entity) {
-  return array(
-    'path' => 'foundbug/report/' . $entity->id,
-  );
-}
-
-/*
- * the representation of entity
-*/
-function bugreport_view($entity, $view_mode = 'tweaky') {
-  // Our entity type, for convenience.
-  $entity_type = 'bugreport';
-  // Start setting up the content.
-  $entity->content = array(
-    '#view_mode' => $view_mode,
-  );
-  // Build fields content - this is where the Field API really comes in to play.
-  // The task has very little code here because it all gets taken care of by
-  // field module.
-  // field_attach_prepare_view() lets the fields load any data they need
-  // before viewing.
-  field_attach_prepare_view($entity_type, array($entity->id => $entity),
-    $view_mode);
-  // We call entity_prepare_view() so it can invoke hook_entity_prepare_view()
-  // for us.
-  entity_prepare_view($entity_type, array($entity->id => $entity));
-  // Now field_attach_view() generates the content for the fields.
-
-
-  // OK, Field API done, now we can set up some of our own data.
-
-  if (!empty($entity->path)) {
-    $entity->content['image'] = array(
-      '#type' => 'item',
-      '#markup' => '<img class="bugreport-image" src=' . file_create_url($entity->path) . '>',
-    );
-  }
-
-  $entity->content['bugreport'] = array(
-    '#type' => 'item',
-    '#title' => t('Bugreport'),
-    '#markup' => $entity->body,
-  );
-  $entity->content['name'] = array(
-    '#type' => 'item',
-    '#id' => 'PS',
-    '#markup' => "Name: " . $entity->name,
-  );
-  $entity->content['email'] = array(
-    '#type' => 'item',
-    '#id' => 'PS',
-    '#markup' => "Email: " . $entity->email,
-  );
-  $entity->content['created'] = array(
-    '#type' => 'item',
-    '#id' => 'PS',
-    '#markup' => "Created: " . format_date($entity->created),
-  );
-  $entity->content['env'] = array(
-    '#type' => 'item',
-    '#id' => 'PS',
-    '#markup' => "Cookie: " . $entity->env,
-  );
-  // Now to invoke some hooks. We need the language code for
-  // hook_entity_view(), so let's get that.
-  global $language;
-  $langcode = $language->language;
-  // And now invoke hook_entity_view().
-  module_invoke_all('entity_view', $entity, $entity_type, $view_mode,
-    $langcode);
-  // Now invoke hook_entity_view_alter().
-  drupal_alter(array('bugreport_view', 'entity_view'),
-    $entity->content, $entity_type);
-
-  // And finally return the content.
-  return $entity->content;
-}
-
-/*
- * function for change state fix of bugreport
- *
- * @param object $entity
- *  the entity to fix
- * @param bool $ajax
- *  is ajax is turned on
- */
-function bugreport_fix($entity, $ajax) {
-
-  //permission check need
-
-  $result = array('#type' => 'ajax');
-  if ($entity->fixed == 0) {
-    $entity->fixed = 1;
-    $result['#commands'][] = ajax_command_replace('.foundbug_fix#' . $entity->id, '<div id=' . $entity->id . ' class="foundbug_fixed">fixed</div>');
-  }
-  else {
-    $entity->fixed = 0;
-    $result['#commands'][] = ajax_command_replace('.foundbug_fixed#' . $entity->id, '<div id=' . $entity->id . ' class="foundbug_fix">fix</div>');
-  }
-  entity_get_controller('bugreport')->save($entity);
-
-
-  return $result;
-}
-
-/*
- * function for delete of bugreport
- *
- * @param object $entity
- *  the entity to delete
- * @param bool $ajax
- *  is ajax is turned on
- */
-function bugreport_delete($entity) {
-  entity_get_controller('bugreport')->delete($entity);
-
-  $result = array('#type' => 'ajax');
-
-
-  $result['#commands'][] = ajax_command_invoke('#id_' . $entity->id, 'hide');
-
-  return $result;
-
-
 }

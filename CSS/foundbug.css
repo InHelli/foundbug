@@ -92,3 +92,9 @@ img.bugreport-image{
 img.radio_bugs{
     width:48px;
 }
+
+.ok_button{
+    margin: 10px 40%;
+    border: 1px solid;
+    text-align: center;
+}
