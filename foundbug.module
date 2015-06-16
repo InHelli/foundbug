@@ -20,7 +20,7 @@ function foundbug_help($path, $arg) {
 }
 
 /*
- * implemant hook_menu
+ * Implements hook_menu
  */
 function foundbug_menu() {
 
@@ -79,7 +79,7 @@ function foundbug_menu() {
 
 
 /*
- * implemet hook_permission()
+ * Implements hook_permission()
  */
 function foundbug_permission() {
   $permissions = array(
@@ -105,6 +105,7 @@ function foundbug_permission() {
  * popup the form to send bugreport
  */
 function foundbug_callback($ajax) {
+
 
   ctools_include('ajax');
 
@@ -189,7 +190,7 @@ function foundbug_block_view($delta = '') {
 
         $bugpath = variable_get('foundbug_imgpath', ' ');
         $blocks['subject'] = t('');
-        $blocks['content'] = l('<img class="bug-button" src = "' . $bugpath . '">', '/foundbug/form/js', array(
+        $blocks['content'] = l('<img class="bug-button" src = "' . $bugpath . '">', '/foundbug/form/nojs', array(
           'attributes' => array('class' => array('ctools-use-modal ctools-modal-bug-style')),
           'html' => TRUE
         )); /// $entries
@@ -245,11 +246,15 @@ function foundbug_send_form_submit($form, &$form_state) {
 
   $myEnt = entity_create('bugreport', $parameters);
   entity_get_controller('bugreport')->save($myEnt);
-
-  $from = variable_get('site_mail', 'admin@example.com');
-  $language = language_default();
-  $params = $form_state;
-  drupal_mail('foundbug', 'newbug', 'inhellimaybo@gmail.com', $language, $params, $from, TRUE);
+  if(variable_get('foundbug_is_notice_need',0)) {
+    $to = variable_get('foundbug_mail_to_send', variable_get('site_mail', 'mail'));
+    $from = variable_get('site_name','site');
+    $language = language_default();
+    $params = $form_state;
+    $params['message'] = 'NEW BUG. ';
+    $params['message'].= check_plain($form_state['values']['text']) . " ";
+    drupal_mail('foundbug', 'newbug', $from, $language, $params, $from, TRUE);
+  }
   $html = l('<div class = "ok_button"> OK </div>','#',array(
     'attributes' => array('class' => array('ctools-close-modal')),
     'html' => TRUE
@@ -262,7 +267,7 @@ function foundbug_send_form_submit($form, &$form_state) {
 
 
 /*
- * implement form_validate_hook()
+ * implements form_validate_hook()
  */
 function foundbug_send_form_validate($form, &$form_state) {
 
@@ -342,7 +347,7 @@ function foundbug_send_form($form, &$form_state) {
 }
 
 /*
- * implement hook_mail
+ * implements hook_mail
 */
 function foundbug_mail($key, &$message, $params) {
   switch ($key) {
@@ -353,8 +358,8 @@ function foundbug_mail($key, &$message, $params) {
       break;
     }
     case 'newbug': {
-      $message['to'] = t('User');
-      $message['subject'] = t('newbug');
+      $message['to'] = t('Admin');
+      $message['subject'] = t('New bug!');
       if (!empty($params['message'])) {
         $message['body'][] = t($params['message']);
       }

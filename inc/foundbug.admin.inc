@@ -161,7 +161,6 @@ function foundbug_admin_form_submit($form, &$form_state) {
   if ($form_state['values']['foundbug_offset_y'] < 0) {
     $form_state['values']['foundbug_offset_y'] = 0;
   }
-  dpm($form_state);
 }
 
 /**
